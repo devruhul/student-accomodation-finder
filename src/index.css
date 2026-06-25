@@ -100,7 +100,7 @@ img {
 
 .filters {
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(220px, 1fr) minmax(180px, 0.8fr);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
   margin-bottom: 28px;
   padding: 18px;
@@ -230,6 +230,12 @@ img {
   border-color: #f3b4ad;
   color: var(--danger);
   background: #fff4f2;
+}
+
+.status.warning {
+  border-color: #facc15;
+  color: #854d0e;
+  background: #fefce8;
 }
 
 .details-layout {

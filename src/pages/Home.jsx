@@ -1,31 +1,61 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { accommodations } from "../data/accommodations";
+import { fetchProperties } from "../services/api";
+import { searchLocalProperties } from "../services/localProperties";
 
 function Home() {
   const [search, setSearch] = useState("");
   const [maxPrice, setMaxPrice] = useState("1000");
   const [roomType, setRoomType] = useState("All");
-  const [isLoading] = useState(false);
+  const [maxDistance, setMaxDistance] = useState("");
+  const [availableFrom, setAvailableFrom] = useState("");
+  const [properties, setProperties] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notice, setNotice] = useState("");
 
-  const hasDataError = !Array.isArray(accommodations);
+  useEffect(() => {
+    let isActive = true;
 
-  const roomTypes = useMemo(() => {
-    if (hasDataError) {
-      return ["All"];
+    async function loadProperties() {
+      setIsLoading(true);
+      setNotice("");
+
+      const filters = {
+        city: search,
+        maxPrice,
+        type: roomType,
+        maxDistance,
+        availableFrom,
+      };
+
+      try {
+        const data = await fetchProperties(filters);
+
+        if (isActive) {
+          setProperties(data);
+        }
+      } catch {
+        if (isActive) {
+          setNotice("Backend is offline, showing local sample data.");
+          setProperties(searchLocalProperties(filters));
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
     }
 
-    return ["All", ...new Set(accommodations.map((item) => item.type))];
-  }, [hasDataError]);
+    loadProperties();
 
-  const filtered = hasDataError
-    ? []
-    : accommodations.filter(
-        (item) =>
-          item.city.toLowerCase().includes(search.toLowerCase()) &&
-          item.price <= Number(maxPrice) &&
-          (roomType === "All" || item.type === roomType),
-      );
+    return () => {
+      isActive = false;
+    };
+  }, [availableFrom, maxDistance, maxPrice, roomType, search]);
+
+  const roomTypes = useMemo(() => {
+    return ["All", ...new Set(properties.map((item) => item.type))];
+  }, [properties]);
 
   return (
     <main className="page-shell">
@@ -39,7 +69,7 @@ function Home() {
       </nav>
 
       <section className="intro">
-        <h1>Find student accommodation</h1>
+        <h1>StudentStay UK</h1>
         <p>Search available rooms by city, budget, and room type.</p>
       </section>
 
@@ -79,21 +109,41 @@ function Home() {
             ))}
           </select>
         </label>
+
+        <label>
+          <span>Max distance</span>
+          <select
+            value={maxDistance}
+            onChange={(event) => setMaxDistance(event.target.value)}
+          >
+            <option value="">Any distance</option>
+            <option value="1">Within 1km</option>
+            <option value="2">Within 2km</option>
+            <option value="3">Within 3km</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Available from</span>
+          <input
+            type="date"
+            value={availableFrom}
+            onChange={(event) => setAvailableFrom(event.target.value)}
+          />
+        </label>
       </section>
 
       {isLoading && <p className="status">Loading accommodation...</p>}
 
-      {hasDataError && (
-        <p className="status error">Sorry, accommodation data could not load.</p>
-      )}
+      {notice && <p className="status warning">{notice}</p>}
 
-      {!isLoading && !hasDataError && filtered.length === 0 && (
+      {!isLoading && properties.length === 0 && (
         <p className="status">No accommodation matches your filters.</p>
       )}
 
-      {!isLoading && !hasDataError && filtered.length > 0 && (
+      {!isLoading && properties.length > 0 && (
         <section className="card-grid" aria-label="Accommodation results">
-          {filtered.map((item) => (
+          {properties.map((item) => (
             <article className="property-card" key={item.id}>
               <img src={item.image} alt={item.title} />
               <div className="card-content">
@@ -103,6 +153,7 @@ function Home() {
                 <div className="card-footer">
                   <span>£{item.price}/month</span>
                   <span>{item.type}</span>
+                  <span>{item.distanceFromUniversityKm}km from uni</span>
                 </div>
                 <Link className="button" to={`/details/${item.id}`}>
                   View details

@@ -1,16 +1,59 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { FavouritesContext } from "../context/FavouritesContextValue";
-import { accommodations } from "../data/accommodations";
+import { fetchPropertyById } from "../services/api";
+import { findLocalPropertyById } from "../services/localProperties";
 
 function Details() {
   const { id } = useParams();
   const { addFavourite, removeFavourite, isFavourite } =
     useContext(FavouritesContext);
+  const [accommodation, setAccommodation] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
 
-  const accommodation = accommodations.find((item) => item.id === Number(id));
+  useEffect(() => {
+    let isActive = true;
 
-  if (!accommodation) {
+    async function loadProperty() {
+      setIsLoading(true);
+      setError("");
+      setNotice("");
+
+      try {
+        const data = await fetchPropertyById(id);
+
+        if (isActive) {
+          setAccommodation(data);
+        }
+      } catch {
+        if (isActive) {
+          const localProperty = findLocalPropertyById(id);
+
+          if (localProperty) {
+            setNotice("Backend is offline, showing local sample data.");
+            setAccommodation(localProperty);
+          } else {
+            setError("Accommodation not found.");
+            setAccommodation(null);
+          }
+        }
+      } finally {
+        if (isActive) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    loadProperty();
+
+    return () => {
+      isActive = false;
+    };
+  }, [id]);
+
+  if (isLoading || error || !accommodation) {
     return (
       <main className="page-shell">
         <nav className="top-nav">
@@ -21,7 +64,8 @@ function Details() {
             Favourites
           </Link>
         </nav>
-        <p className="status error">Accommodation not found.</p>
+        {isLoading && <p className="status">Loading accommodation...</p>}
+        {error && <p className="status error">{error}</p>}
       </main>
     );
   }
@@ -43,11 +87,14 @@ function Details() {
         <img src={accommodation.image} alt={accommodation.title} />
 
         <div className="details-content">
+          {notice && <p className="status warning">{notice}</p>}
           <p className="meta">{accommodation.city}</p>
           <h1>{accommodation.title}</h1>
           <div className="detail-stats">
             <span>£{accommodation.price}/month</span>
             <span>{accommodation.type}</span>
+            <span>{accommodation.distanceFromUniversityKm}km from uni</span>
+            <span>Available {accommodation.availabilityDate}</span>
           </div>
           <p>{accommodation.description}</p>
 

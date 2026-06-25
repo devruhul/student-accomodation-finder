@@ -1,4 +1,4 @@
-export const accommodations = [
+const properties = [
   {
     id: 1,
     title: "London Student Residence",
@@ -41,7 +41,7 @@ export const accommodations = [
     distanceFromUniversityKm: 2.1,
     availabilityDate: "2026-07-20",
     image: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2",
-    description: "Bright shared rooms close to transport and student cafes.",
+    description: "Bright shared rooms close to transport and student cafés.",
   },
   {
     id: 5,
@@ -55,3 +55,47 @@ export const accommodations = [
     description: "Private studio with study space and fast Wi-Fi.",
   },
 ];
+
+function parseOptionalNumber(value) {
+  if (value === "" || value == null) {
+    return null;
+  }
+
+  const number = Number(value);
+
+  return Number.isFinite(number) ? number : null;
+}
+
+export function searchProperties(filters = {}) {
+  const city = filters.city?.trim().toLowerCase();
+  const maxPrice = parseOptionalNumber(filters.maxPrice);
+  const type = filters.type?.trim();
+  const maxDistance = parseOptionalNumber(filters.maxDistance);
+  const availableFrom = filters.availableFrom
+    ? new Date(filters.availableFrom)
+    : null;
+
+  return properties.filter((property) => {
+    const matchesCity = city ? property.city.toLowerCase().includes(city) : true;
+    const matchesPrice = maxPrice != null ? property.price <= maxPrice : true;
+    const matchesType = type && type !== "All" ? property.type === type : true;
+    const matchesDistance = maxDistance != null
+      ? property.distanceFromUniversityKm <= maxDistance
+      : true;
+    const matchesDate = availableFrom
+      ? new Date(property.availabilityDate) >= availableFrom
+      : true;
+
+    return (
+      matchesCity &&
+      matchesPrice &&
+      matchesType &&
+      matchesDistance &&
+      matchesDate
+    );
+  });
+}
+
+export function findPropertyById(id) {
+  return properties.find((property) => property.id === id);
+}
