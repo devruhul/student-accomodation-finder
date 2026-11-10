@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { accommodations } from "../data/accommodations";
 import { fetchProperties } from "../services/api";
 import { searchLocalProperties } from "../services/localProperties";
+
+const roomTypes = ["All", ...new Set(accommodations.map((item) => item.type))];
 
 function Home() {
   const [search, setSearch] = useState("");
@@ -52,10 +55,6 @@ function Home() {
       isActive = false;
     };
   }, [availableFrom, maxDistance, maxPrice, roomType, search]);
-
-  const roomTypes = useMemo(() => {
-    return ["All", ...new Set(properties.map((item) => item.type))];
-  }, [properties]);
 
   function clearFilters() {
     setSearch("");
