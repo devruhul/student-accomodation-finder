@@ -57,6 +57,14 @@ function Home() {
     return ["All", ...new Set(properties.map((item) => item.type))];
   }, [properties]);
 
+  function clearFilters() {
+    setSearch("");
+    setMaxPrice("1000");
+    setRoomType("All");
+    setMaxDistance("");
+    setAvailableFrom("");
+  }
+
   return (
     <main className="page-shell">
       <nav className="top-nav">
@@ -131,6 +139,10 @@ function Home() {
             onChange={(event) => setAvailableFrom(event.target.value)}
           />
         </label>
+
+        <button className="button secondary" type="button" onClick={clearFilters}>
+          Clear filters
+        </button>
       </section>
 
       {isLoading && <p className="status">Loading accommodation...</p>}
